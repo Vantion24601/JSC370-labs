@@ -3,6 +3,9 @@ Lab 08 - Text Mining/NLP
 Elaine Dai
 2024-2-28
 
+View the rendered HTML version of the lab
+[here](https://htmlpreview.github.io/?https://github.com/Vantion24601/JSC370-labs/blob/master/lab08/lab08-text-mining.html)
+
 # Learning goals
 
 - Use `unnest_tokens()` and `unnest_ngrams()` to extract tokens and

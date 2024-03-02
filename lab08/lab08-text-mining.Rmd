@@ -2,13 +2,17 @@
 title: "Lab 08 - Text Mining/NLP"
 author: "Elaine Dai"
 date: "2024-2-28"
-output: github_document
+output: html_document
 always_allow_html: true
 ---
 
 ```{r setup, echo=FALSE}
 knitr::opts_chunk$set(eval = T, include  = T)
 ```
+
+
+View the rendered HTML version of the lab [here](https://htmlpreview.github.io/?https://github.com/Vantion24601/JSC370-labs/blob/master/lab08/lab08-text-mining.html)
+
 
 # Learning goals
 
