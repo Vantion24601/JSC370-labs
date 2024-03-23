@@ -1,5 +1,7 @@
 ---
 title: "Lab 11 - Interactive Visualization"
+author: "Elaine Dai"
+date: "2024-3-21"
 output: html_document
 ---
 
@@ -90,14 +92,14 @@ sb_usa <- sb_locs |> filter(Country == "US")
 sb_locs_state <- sb_usa |>
   group_by(`State/Province`) |>
   rename(Abbreviation = `State/Province`) |>
-  summarize(Count = n())
+  summarize(n_stores = n())
 
 # need state abbreviations
 usa_pop_abbr <- usa_states |> 
   full_join(usa_pop, 
             by = c("State" = "state")) 
 
-sb_locs_state <- full_join(usa_pop_abbr, sb_locs_state, by = "Abbreviation")
+sb_locs_state <- full_join(sb_locs_state, usa_pop_abbr, by = "Abbreviation")
 sb_locs_state
 ```
 ```{r}
@@ -116,7 +118,7 @@ Answer the following questions:
 - What are the top 20 words in Starbucks menu items? (bar plot)
 
 ```{r message=FALSE}
-p1 <- ggplot(sb_locs_state, aes(x = population, y = Count)) +
+p1 <- ggplot(sb_locs_state, aes(x = population, y = n_stores)) +
   geom_point() +
   theme_minimal() +
   labs(x = "Population", y = "Number of Starbucks Stores", title = "Starbucks Stores vs. State Population") +
@@ -132,7 +134,7 @@ The number of Starbucks is possitively proportional to the population of a state
 p2 <- ggplot(sb_nutr, aes(x = Calories, fill = Category)) +
   geom_histogram(position = "identity", alpha = 0.8, bins = 30) +
   theme_minimal() +
-  labs(x = "Calories", y = "Count", title = "Caloric Distribution of Starbucks Menu Items")
+  labs(x = "Calories", y = "n_stores", title = "Caloric Distribution of Starbucks Menu Items")
 
 ggplotly(p2)
 ```
@@ -221,10 +223,39 @@ cal_carb_top_words
 
 - Create a boxplot of all of the nutritional variables in groups by the 10 item words.
 
-```{r}
 
+```{r}
+identify_top_words <- function(item_name, top_words) {
+  contained_words <- top_words[sapply(top_words, function(word) str_detect(item_name, regex(word, ignore_case = TRUE)))]
+  paste(contained_words, collapse = ", ")
+}
+```
+
+```{r results='hide'}
+with_words <- sb_nutr_top_words |>
+  mutate(TopWordsContained = sapply(Item, identify_top_words, top_words = top_10)) |>
+  separate_rows(TopWordsContained, sep = ",\\s*")
+with_words
+```
+
+
+```{r}
+with_words_long <- with_words |>
+  pivot_longer(
+    cols = c(`Fat (g)`, `Carb. (g)`, `Fiber (g)`, `Protein (g)`), 
+    names_to = "Nutrient", 
+    values_to = "Value")
+
+plot_ly(data = with_words_long, 
+        x = ~TopWordsContained, 
+        y = ~Value, type = 'box',
+        color = ~Nutrient) |>
+  layout(yaxis = list(title = 'Nutritional Value'), 
+         xaxis = list(title = 'Top Words'), 
+         title = 'Nutritional Content by Top Words')
 
 ```
+
 
 ### 7. 3D Scatterplot
 
@@ -252,7 +283,7 @@ Higher calories come with higher carbs and higher protein. The three variables a
 - Create a map to visualize the number of stores per state, and another for the population by state. Use subplot to put the maps side by side.
 - Describe the differences if any.
 
-```{r eval=FALSE}
+```{r warning=FALSE}
 # Set up mapping details
 set_map_details <- list(
   scope = 'usa',
@@ -265,14 +296,37 @@ set_map_details <- list(
 shadeLimit <- 125
 
 # Create hover text
-sb_locs_state$hover <- with(sb_locs_state, paste("Number of Starbucks: ", n_stores, '<br>', "State: ", state.y, '<br>', "Population: ", population))
+sb_locs_state$hover <- with(sb_locs_state, paste("Number of Starbucks: ", n_stores, '<br>', "State: ", Abbreviation, '<br>', "Population: ", population))
+
+usa_pop_abbr$hover <- with(usa_pop_abbr, paste("State: ", Abbreviation, '<br>', "Population: ", population))
+
 
 # Create the map
-map1 <- plot_geo()
+map1 <- plot_geo(sb_locs_state, locationmode = 'USA-states') |>
+  add_trace(
+    z = ~n_stores, locations = ~Abbreviation,
+    hoverinfo = "text",
+    text = ~hover,
+    colors = 'Purples', 
+    marker = list(line = list(color = 'rgb(255,255,255)', width = 2))
+  ) |>
+  colorbar(title = "Stores") |>
+  layout(title = 'Starbucks Stores per State', geo = set_map_details)
+
 map1
 
 
-map2 <- plot_geo()
+map2 <- plot_geo(usa_pop_abbr, locationmode = 'USA-states') |>
+  add_trace(
+    z = ~population, locations = ~Abbreviation,
+    hoverinfo = "text",
+    text = ~hover,
+    colors = 'Greens', 
+    marker = list(line = list(color = 'rgb(255,255,255)', width = 2))
+  ) |>
+  colorbar(title = "Population") |>
+  layout(title = 'Population by State', geo = set_map_details)
+
 map2
 
 subplot(map1, map2)
